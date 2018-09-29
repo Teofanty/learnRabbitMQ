@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:int="http://www.springframework.org/schema/integration"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:int-stream="http://www.springframework.org/schema/integration/stream"
+	xmlns:file="http://www.springframework.org/schema/integration/file"
+	xmlns:int-http="http://www.springframework.org/schema/integration/http"
+	xmlns:int-amqp="http://www.springframework.org/schema/integration/amqp"
+	xmlns:rabbit="http://www.springframework.org/schema/rabbit" xmlns:p="http://www.springframework.org/schema/p"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/integration
+        http://www.springframework.org/schema/integration/spring-integration.xsd
+        http://www.springframework.org/schema/integration/stream
+        http://www.springframework.org/schema/integration/stream/spring-integration-stream.xsd
+        http://www.springframework.org/schema/integration/file 
+        http://www.springframework.org/schema/integration/file/spring-integration-file.xsd
+        http://www.springframework.org/schema/integration/http 
+        http://www.springframework.org/schema/integration/http/spring-integration-http.xsd
+        http://www.springframework.org/schema/integration/amqp 
+        http://www.springframework.org/schema/integration/amqp/spring-integration-amqp.xsd
+        http://www.springframework.org/schema/rabbit 
+        http://www.springframework.org/schema/rabbit/spring-rabbit.xsd">
+
+	<rabbit:connection-factory id="rabbitConnectionFactory" host="${spring.rabbitmq.host}" username="${spring.rabbitmq.username}" password="${spring.rabbitmq.password}"/>
+    <rabbit:template id="amqpTemplate" connection-factory="rabbitConnectionFactory" />
+    <rabbit:admin connection-factory="rabbitConnectionFactory" />
+
+	<rabbit:queue name="sync.queue"/>
+	<rabbit:queue name="deadLetter.queue"/>
+	<rabbit:queue name="async.queue" >
+		<rabbit:queue-arguments>
+            <entry key="x-dead-letter-exchange" value="learnRabbitmq.exchange"></entry>
+            <entry key="x-dead-letter-routing-key" value="deadLetter.queue"></entry>
+            <entry key="x-message-ttl" value="10000" value-type="java.lang.Long"/>
+        </rabbit:queue-arguments>
+	</rabbit:queue>
+		
+	<rabbit:direct-exchange name="learnRabbitmq.exchange" >
+		<rabbit:bindings>
+			<rabbit:binding queue="sync.queue" key="sync.queue" />
+			<rabbit:binding key="async.queue" queue="async.queue"/>
+			<rabbit:binding key="deadLetter.queue" queue="deadLetter.queue"/>
+		</rabbit:bindings>
+	</rabbit:direct-exchange>
+	
+	<rabbit:queue name="fanoutOne.queue"/>
+	<rabbit:queue name="fanoutTwo.queue"/>
+	<rabbit:fanout-exchange name="testFanout.exchange">
+		<rabbit:bindings>
+			<rabbit:binding queue="fanoutOne.queue"></rabbit:binding>
+			<rabbit:binding queue="fanoutTwo.queue"></rabbit:binding>
+		</rabbit:bindings>
+	</rabbit:fanout-exchange>
+		
+</beans>
